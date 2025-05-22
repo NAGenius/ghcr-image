@@ -32,6 +32,6 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         push: true
-        tags: ghcr.io/${{ github.repository }}:22.04
+        tags: ghcr.io/${{ github.repository_owner | downcase }}/ghcr-image:22.04
         cache-from: type=gha
         cache-to: type=gha,mode=max
