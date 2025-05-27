@@ -25,10 +25,16 @@ RUN apt-get update && \
     ca-certificates \
     git \
     locales \
+    nodejs \
+    npm \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/*
+
+# 直接安装pnpm（不依赖npm）
+RUN curl -fsSL https://get.pnpm.io/install.sh | sh - && \
+    mv /root/.local/share/pnpm/pnpm /usr/local/bin/pnpm
 
 # 安装中文字体支持
 RUN apt-get update && \
@@ -48,14 +54,21 @@ ENV LANG=zh_CN.UTF-8
 ENV LC_ALL=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:en
 
-# 安装 Jupyter Lab (最小安装)
+# 设置默认shell为bash
+ENV SHELL=/bin/bash
+
+# 设置PS1环境变量，确保Jupyter终端显示正确提示符
+ENV PS1="[😊] \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "
+
+# 安装 Jupyter Lab (最新版本)
 RUN pip3 install --no-cache-dir jupyterlab
 
 # 创建 python 软链接
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # 配置终端提示符和别名
-RUN echo 'export PS1="(😊) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /root/.bashrc && \
+RUN echo 'export PS1="[😊] \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /root/.bashrc && \
+    echo 'export PS1="[😊] \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /etc/bash.bashrc && \
     echo "alias ll='ls -alF'" >> /root/.bashrc && \
     echo "alias la='ls -A'" >> /root/.bashrc && \
     echo "alias l='ls -CF'" >> /root/.bashrc && \
@@ -69,6 +82,13 @@ RUN mkdir /var/run/sshd && \
 
 # 设置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 创建更新的Jupyter配置文件
+RUN mkdir -p /root/.jupyter && \
+    echo "c.ServerApp.token = ''" > /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.password = ''" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.disable_check_xsrf = True" >> /root/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.allow_origin = '*'" >> /root/.jupyter/jupyter_lab_config.py
 
 # 创建init脚本，包含SSH端口配置
 RUN echo '#!/bin/bash\n\
