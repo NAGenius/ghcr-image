@@ -57,7 +57,7 @@ ENV LANGUAGE=zh_CN:en
 ENV SHELL=/bin/bash
 
 # 设置PS1环境变量，确保Jupyter终端显示正确提示符
-ENV PS1="😊 \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "
+ENV PS1="😊  \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "
 
 # 安装 Jupyter Lab (最新版本)
 RUN pip3 install --no-cache-dir jupyterlab
@@ -66,8 +66,8 @@ RUN pip3 install --no-cache-dir jupyterlab
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 # 配置终端提示符和别名
-RUN echo 'export PS1="😊 \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /root/.bashrc && \
-    echo 'export PS1="😊 \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /etc/bash.bashrc && \
+RUN echo 'export PS1="😊  \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /root/.bashrc && \
+    echo 'export PS1="😊  \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /etc/bash.bashrc && \
     echo "alias ll='ls -alF'" >> /root/.bashrc && \
     echo "alias la='ls -A'" >> /root/.bashrc && \
     echo "alias l='ls -CF'" >> /root/.bashrc && \
