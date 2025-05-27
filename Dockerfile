@@ -32,9 +32,8 @@ RUN apt-get update && \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/*
 
-# 直接安装pnpm（不依赖npm）
-RUN curl -fsSL https://get.pnpm.io/install.sh | sh - && \
-    mv /root/.local/share/pnpm/pnpm /usr/local/bin/pnpm
+# 使用npm安装pnpm（更稳定的方式）
+RUN npm install -g pnpm
 
 # 安装中文字体支持
 RUN apt-get update && \
