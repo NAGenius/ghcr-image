@@ -6,7 +6,7 @@ ENV TZ=Asia/Shanghai
 
 # 更新包管理器并安装服务器必要软件
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     curl \
     wget \
     vim \
@@ -21,10 +21,34 @@ RUN apt-get update && \
     rsyslog \
     python3 \
     python3-pip \
+    systemd \
+    systemd-sysv \
+    sudo \
+    ca-certificates \
+    git \
+    locales \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* \
     && rm -rf /var/tmp/*
+
+# 安装中文字体支持
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ttf-wqy-microhei \
+    ttf-wqy-zenhei \
+    xfonts-wqy \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 配置中文语言环境
+RUN locale-gen zh_CN.UTF-8 && \
+    update-locale LANG=zh_CN.UTF-8
+
+# 设置中文环境变量
+ENV LANG=zh_CN.UTF-8
+ENV LC_ALL=zh_CN.UTF-8
+ENV LANGUAGE=zh_CN:en
 
 # 安装 Jupyter Lab (最小安装)
 RUN pip3 install --no-cache-dir jupyterlab
@@ -37,14 +61,25 @@ RUN mkdir /var/run/sshd && \
     echo 'root:1234' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
+# 启用SSH服务开机自启动
+RUN systemctl enable ssh
+
 # 设置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 创建初始化脚本(Pod需要)
-RUN echo '#!/bin/bash\necho "Container started"' > /init.sh && chmod +x /init.sh
+# 配置systemd以在容器中运行
+RUN cd /lib/systemd/system/sysinit.target.wants/; \
+    ls | grep -v systemd-tmpfiles-setup | xargs rm -f $1; \
+    rm -f /lib/systemd/system/multi-user.target.wants/*; \
+    rm -f /etc/systemd/system/*.wants/*; \
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*; \
+    rm -f /lib/systemd/system/anaconda.target.wants/*;
 
 # 暴露SSH端口和Jupyter端口
 EXPOSE 22 3000
 
-# 启动SSH服务
-CMD ["/usr/sbin/sshd", "-D"]
+# 使用systemd作为初始化进程
+CMD ["/lib/systemd/systemd"]
