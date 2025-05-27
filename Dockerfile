@@ -21,8 +21,6 @@ RUN apt-get update && \
     rsyslog \
     python3 \
     python3-pip \
-    systemd \
-    systemd-sysv \
     sudo \
     ca-certificates \
     git \
@@ -56,30 +54,46 @@ RUN pip3 install --no-cache-dir jupyterlab
 # 创建 python 软链接
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
+# 配置终端提示符和别名
+RUN echo 'export PS1="(😊) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ "' >> /root/.bashrc && \
+    echo "alias ll='ls -alF'" >> /root/.bashrc && \
+    echo "alias la='ls -A'" >> /root/.bashrc && \
+    echo "alias l='ls -CF'" >> /root/.bashrc && \
+    echo "alias vi='vim'" >> /root/.bashrc
+
 # 配置SSH
 RUN mkdir /var/run/sshd && \
     echo 'root:1234' | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-
-# 启用SSH服务开机自启动
-RUN systemctl enable ssh
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
 # 设置时区
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# 配置systemd以在容器中运行
-RUN cd /lib/systemd/system/sysinit.target.wants/; \
-    ls | grep -v systemd-tmpfiles-setup | xargs rm -f $1; \
-    rm -f /lib/systemd/system/multi-user.target.wants/*; \
-    rm -f /etc/systemd/system/*.wants/*; \
-    rm -f /lib/systemd/system/local-fs.target.wants/*; \
-    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-    rm -f /lib/systemd/system/basic.target.wants/*; \
-    rm -f /lib/systemd/system/anaconda.target.wants/*;
+# 创建init脚本，包含SSH端口配置
+RUN echo '#!/bin/bash\n\
+echo "Container initialization started"\n\
+\n\
+# 配置SSH端口（如果SSH_PORT环境变量存在）\n\
+if [ ! -z "$SSH_PORT" ]; then\n\
+    echo "Port ${SSH_PORT}" >> /etc/ssh/sshd_config\n\
+    echo "SSH port configured to: ${SSH_PORT}"\n\
+else\n\
+    echo "SSH_PORT not set, using default port 22"\n\
+fi\n\
+\n\
+# 启动SSH服务\n\
+service ssh start\n\
+echo "SSH service started"\n\
+\n\
+# 检查SSH状态\n\
+if pgrep -x "sshd" > /dev/null; then\n\
+    echo "SSH service is running"\n\
+else\n\
+    echo "SSH service failed to start"\n\
+fi\n\
+\n\
+echo "Initialization completed"' > /init.sh && chmod +x /init.sh
 
-# 暴露SSH端口和Jupyter端口
-EXPOSE 22 3000
-
-# 使用systemd作为初始化进程
-CMD ["/lib/systemd/systemd"]
+# 默认启动SSH服务
+CMD ["/usr/sbin/sshd", "-D"]
