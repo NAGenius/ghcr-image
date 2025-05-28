@@ -27,6 +27,15 @@ RUN apt-get update && \
     locales \
     nodejs \
     npm \
+    zip \
+    unzip \
+    tar \
+    xz-utils \
+    gzip \
+    bzip2 \
+    p7zip-full \
+    rar \
+    unrar \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* \
