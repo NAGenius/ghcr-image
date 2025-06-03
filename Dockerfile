@@ -4,6 +4,9 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Shanghai
 
+# 预先配置时区，避免后续冲突
+RUN echo "Asia/Shanghai" > /etc/timezone
+
 # 更新包管理器并安装服务器必要软件
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -88,8 +91,8 @@ RUN mkdir /var/run/sshd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# 设置时区
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# 配置时区（在 tzdata 安装后使用 dpkg-reconfigure）
+RUN dpkg-reconfigure -f noninteractive tzdata
 
 # 创建更新的Jupyter配置文件
 RUN mkdir -p /root/.jupyter && \
